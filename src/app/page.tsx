@@ -13,7 +13,10 @@ export default function HomePage() {
             Onaylanmış ilanları keşfedin
           </p>
         </div>
-        <AdList emptyMessage="Henüz yayında ilan bulunmuyor." />
+        <AdList
+          emptyMessage="Henüz yayında ilan bulunmuyor."
+          enableDetail
+        />
       </section>
     </div>
   );

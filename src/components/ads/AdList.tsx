@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AdCard } from "@/components/ads/AdCard";
+import { AdDetailModal } from "@/components/ads/AdDetailModal";
 import { Button } from "@/components/ui/Button";
 import type { ClassifiedAd } from "@/types/database";
 
@@ -11,6 +12,7 @@ interface AdListProps {
   statusFilter?: "all" | "pending" | "approved" | "rejected";
   showStatus?: boolean;
   emptyMessage?: string;
+  enableDetail?: boolean;
 }
 
 export function AdList({
@@ -18,10 +20,12 @@ export function AdList({
   statusFilter = "all",
   showStatus = false,
   emptyMessage = "Henüz ilan bulunmuyor.",
+  enableDetail = false,
 }: AdListProps) {
   const supabase = createClient();
   const [ads, setAds] = useState<ClassifiedAd[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
 
   const fetchAds = useCallback(async () => {
     setLoading(true);
@@ -77,23 +81,36 @@ export function AdList({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {ads.map((ad) => (
-        <div key={ad.id} className="relative group">
-          <AdCard ad={ad} showStatus={showStatus} />
-          {showStatus && ad.status === "pending" && vendorId && (
-            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => handleDelete(ad.id)}
-              >
-                Sil
-              </Button>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {ads.map((ad) => (
+          <div key={ad.id} className="relative group">
+            <AdCard
+              ad={ad}
+              showStatus={showStatus}
+              onClick={enableDetail ? () => setSelectedAd(ad) : undefined}
+            />
+            {showStatus && ad.status === "pending" && vendorId && (
+              <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(ad.id);
+                  }}
+                >
+                  Sil
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {enableDetail && (
+        <AdDetailModal ad={selectedAd} onClose={() => setSelectedAd(null)} />
+      )}
+    </>
   );
 }

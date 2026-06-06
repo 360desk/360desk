@@ -50,7 +50,7 @@ export function VendorPanel() {
       {activeTab === "ilanlar" && (
         <div className="flex flex-col gap-6">
           <AdForm
-            userId={user.id}
+            vendorId={user.id}
             onSuccess={() => setRefreshKey((k) => k + 1)}
           />
           <div>

@@ -6,6 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
+import { AdGallery } from "@/components/ads/AdGallery";
 import type { ClassifiedAd } from "@/types/database";
 
 export function PendingAdsTable() {
@@ -62,42 +63,51 @@ export function PendingAdsTable() {
   return (
     <div className="flex flex-col gap-4">
       {ads.map((ad) => (
-        <Card key={ad.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
-                {ad.category}
-              </span>
-              <StatusBadge status={ad.status} />
-            </div>
-            <h3 className="text-lg font-semibold text-cream">{ad.title}</h3>
-            {ad.description && (
-              <p className="text-sm text-cream/60 mt-1 line-clamp-2">
-                {ad.description}
-              </p>
-            )}
-            <div className="flex flex-wrap gap-4 mt-2 text-sm text-cream/40">
-              <span>{formatCurrency(ad.price)}</span>
-              {ad.location && <span>{ad.location}</span>}
-              <span>{formatDate(ad.created_at)}</span>
-            </div>
+        <Card
+          key={ad.id}
+          className="flex flex-col gap-4 sm:flex-row sm:items-start"
+        >
+          <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28">
+            <AdGallery ad={ad} variant="thumb" className="h-full w-full" />
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Button
-              size="sm"
-              onClick={() => handleAction(ad.id, "approved")}
-              disabled={actionLoading === ad.id}
-            >
-              Onayla
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => handleAction(ad.id, "rejected")}
-              disabled={actionLoading === ad.id}
-            >
-              Reddet
-            </Button>
+
+          <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  {ad.category}
+                </span>
+                <StatusBadge status={ad.status} />
+              </div>
+              <h3 className="text-lg font-semibold text-cream">{ad.title}</h3>
+              {ad.description && (
+                <p className="text-sm text-cream/60 mt-1 line-clamp-2">
+                  {ad.description}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-4 mt-2 text-sm text-cream/40">
+                <span>{formatCurrency(ad.price)}</span>
+                {ad.location && <span>{ad.location}</span>}
+                <span>{formatDate(ad.created_at)}</span>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={() => handleAction(ad.id, "approved")}
+                disabled={actionLoading === ad.id}
+              >
+                Onayla
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleAction(ad.id, "rejected")}
+                disabled={actionLoading === ad.id}
+              >
+                Reddet
+              </Button>
+            </div>
           </div>
         </Card>
       ))}

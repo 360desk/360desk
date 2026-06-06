@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { ensureVendorProfile } from "@/lib/supabase/profile";
 import type { Profile, UserRole } from "@/types/database";
 
 interface AuthContextValue {
@@ -46,6 +47,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!error && data) {
         setProfile(data as Profile);
       } else {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        if (authUser) {
+          await ensureVendorProfile(supabase, authUser);
+          const { data: retry } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .single();
+          if (retry) {
+            setProfile(retry as Profile);
+            return;
+          }
+        }
         setProfile(null);
       }
     },

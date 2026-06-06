@@ -33,6 +33,7 @@ CREATE TABLE classified_ads (
   category TEXT NOT NULL,
   location TEXT,
   contact_phone TEXT,
+  images TEXT[] NOT NULL DEFAULT '{}',
   status ad_status NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -146,6 +147,11 @@ CREATE POLICY "Profiles are viewable by owner"
   ON profiles FOR SELECT
   USING (auth.uid() = id OR public.is_admin());
 
+CREATE POLICY "Users can insert own profile"
+  ON profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id)
@@ -170,7 +176,8 @@ CREATE POLICY "Admins can view all ads"
 
 CREATE POLICY "Vendors can insert own ads"
   ON classified_ads FOR INSERT
-  WITH CHECK (auth.uid() = vendor_id AND public.is_vendor());
+  TO authenticated
+  WITH CHECK (auth.uid() = vendor_id);
 
 CREATE POLICY "Vendors can update own pending ads"
   ON classified_ads FOR UPDATE
@@ -196,7 +203,8 @@ CREATE POLICY "Admins can view all financial records"
 
 CREATE POLICY "Vendors can insert own financial records"
   ON financial_records FOR INSERT
-  WITH CHECK (auth.uid() = vendor_id AND public.is_vendor());
+  TO authenticated
+  WITH CHECK (auth.uid() = vendor_id);
 
 CREATE POLICY "Vendors can update own financial records"
   ON financial_records FOR UPDATE
@@ -206,3 +214,33 @@ CREATE POLICY "Vendors can update own financial records"
 CREATE POLICY "Vendors can delete own financial records"
   ON financial_records FOR DELETE
   USING (auth.uid() = vendor_id);
+
+-- ─────────────────────────────────────────────
+-- 7. STORAGE POLICIES (ad-images bucket)
+-- ─────────────────────────────────────────────
+
+CREATE POLICY "Anyone can view ad images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'ad-images');
+
+CREATE POLICY "Vendors can upload ad images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'ad-images'
+    AND auth.role() = 'authenticated'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "Vendors can update own ad images"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'ad-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+CREATE POLICY "Vendors can delete own ad images"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'ad-images'
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );

@@ -1,23 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { createClient } from "@/lib/supabase/client";
+import { insertClassifiedAd } from "@/lib/supabase/ads";
+import { uploadAdImages } from "@/lib/supabase/storage";
 import { AD_CATEGORIES } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
+import { ImageUpload } from "@/components/ads/ImageUpload";
 
 interface AdFormProps {
-  userId: string;
+  vendorId: string;
   onSuccess: () => void;
 }
 
-export function AdForm({ userId, onSuccess }: AdFormProps) {
-  const supabase = createClient();
+export function AdForm({ vendorId, onSuccess }: AdFormProps) {
+  const { user } = useAuth();
+  const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const activeVendorId = user?.id ?? vendorId;
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -32,19 +40,40 @@ export function AdForm({ userId, onSuccess }: AdFormProps) {
     setError("");
     setLoading(true);
 
-    const { error: insertError } = await supabase.from("classified_ads").insert({
-      vendor_id: userId,
-      title: form.title,
-      description: form.description || null,
-      price: parseFloat(form.price),
-      category: form.category,
-      location: form.location || null,
-      contact_phone: form.contact_phone || null,
-      status: "pending",
-    });
+    if (!activeVendorId) {
+      setError("Kullanıcı kimliği bulunamadı. Lütfen tekrar giriş yapın.");
+      setLoading(false);
+      return;
+    }
+
+    const { urls, error: uploadError } = await uploadAdImages(
+      supabase,
+      activeVendorId,
+      imageFiles
+    );
+
+    if (uploadError) {
+      setError(`Görsel yükleme hatası: ${uploadError}`);
+      setLoading(false);
+      return;
+    }
+
+    const { error: insertError } = await insertClassifiedAd(
+      supabase,
+      {
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        price: parseFloat(form.price),
+        category: form.category,
+        location: form.location.trim() || null,
+        contact_phone: form.contact_phone.trim() || null,
+        images: urls,
+      },
+      activeVendorId
+    );
 
     if (insertError) {
-      setError(insertError.message);
+      setError(insertError);
     } else {
       setForm({
         title: "",
@@ -54,6 +83,7 @@ export function AdForm({ userId, onSuccess }: AdFormProps) {
         location: "",
         contact_phone: "",
       });
+      setImageFiles([]);
       onSuccess();
     }
 
@@ -83,6 +113,15 @@ export function AdForm({ userId, onSuccess }: AdFormProps) {
             placeholder="İlan detaylarını yazın..."
           />
         </div>
+
+        <div className="sm:col-span-2">
+          <ImageUpload
+            files={imageFiles}
+            onChange={setImageFiles}
+            disabled={loading}
+          />
+        </div>
+
         <Input
           label="Fiyat (₺)"
           type="number"
@@ -119,7 +158,7 @@ export function AdForm({ userId, onSuccess }: AdFormProps) {
         )}
 
         <div className="sm:col-span-2">
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || !activeVendorId}>
             {loading ? "Kaydediliyor..." : "İlanı Gönder"}
           </Button>
         </div>

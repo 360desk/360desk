@@ -20,6 +20,7 @@ export interface ClassifiedAd {
   category: string;
   location: string | null;
   contact_phone: string | null;
+  images: string[];
   status: AdStatus;
   created_at: string;
   updated_at: string;
