@@ -32,7 +32,7 @@ export default function AdminPage() {
       <div>
         <h1 className="text-2xl font-bold text-cream">Yönetim Paneli</h1>
         <p className="text-sm text-cream/50 mt-1">
-          Onay bekleyen ilanları inceleyin ve karar verin.
+          İlan kartına tıklayarak detay sayfasını inceleyin, ardından onaylayın veya reddedin.
         </p>
       </div>
       <PendingAdsTable />

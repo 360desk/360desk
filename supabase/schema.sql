@@ -6,7 +6,8 @@
 -- ─────────────────────────────────────────────
 
 CREATE TYPE user_role AS ENUM ('guest', 'vendor', 'admin');
-CREATE TYPE ad_status AS ENUM ('pending', 'approved', 'rejected');
+CREATE TYPE ad_status AS ENUM ('draft', 'pending', 'approved', 'rejected');
+CREATE TYPE visibility_mode AS ENUM ('private', 'internal_mls', 'public');
 CREATE TYPE record_type AS ENUM ('income', 'expense');
 
 -- ─────────────────────────────────────────────
@@ -26,15 +27,36 @@ CREATE TABLE profiles (
 -- Classified Ads (Sahibinden model)
 CREATE TABLE classified_ads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  custom_listing_id TEXT UNIQUE,
+  tasinmaz_no TEXT,
   vendor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
   price NUMERIC(12, 2) NOT NULL CHECK (price >= 0),
   category TEXT NOT NULL,
+  category_main TEXT,
+  category_type TEXT,
+  category_group TEXT,
+  category_sub TEXT,
   location TEXT,
   contact_phone TEXT,
   images TEXT[] NOT NULL DEFAULT '{}',
+  sq_meters_gross INTEGER CHECK (sq_meters_gross IS NULL OR sq_meters_gross > 0),
+  sq_meters_net INTEGER CHECK (sq_meters_net IS NULL OR sq_meters_net > 0),
+  room_count TEXT,
+  floor_number TEXT,
+  total_floors INTEGER CHECK (total_floors IS NULL OR total_floors > 0),
+  heating_type TEXT,
+  building_age INTEGER CHECK (building_age IS NULL OR building_age >= 0),
+  dynamic_properties JSONB NOT NULL DEFAULT '{
+    "property_specs": {},
+    "community_specs": {},
+    "location_specs": {}
+  }'::jsonb,
   status ad_status NOT NULL DEFAULT 'pending',
+  rejection_reason TEXT,
+  is_archived BOOLEAN NOT NULL DEFAULT false,
+  visibility_mode visibility_mode NOT NULL DEFAULT 'private',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -56,7 +78,20 @@ CREATE TABLE financial_records (
 
 CREATE INDEX idx_classified_ads_vendor_id ON classified_ads(vendor_id);
 CREATE INDEX idx_classified_ads_status ON classified_ads(status);
+CREATE INDEX idx_classified_ads_is_archived ON classified_ads(is_archived);
+CREATE INDEX idx_classified_ads_tasinmaz_no ON classified_ads(tasinmaz_no)
+  WHERE tasinmaz_no IS NOT NULL;
+CREATE UNIQUE INDEX idx_classified_ads_tasinmaz_active ON classified_ads(tasinmaz_no)
+  WHERE tasinmaz_no IS NOT NULL
+    AND status IN ('pending', 'approved')
+    AND is_archived = false;
 CREATE INDEX idx_classified_ads_category ON classified_ads(category);
+CREATE INDEX idx_classified_ads_category_main ON classified_ads(category_main);
+CREATE INDEX idx_classified_ads_category_type ON classified_ads(category_type);
+CREATE INDEX idx_classified_ads_category_group ON classified_ads(category_group);
+CREATE INDEX idx_classified_ads_dynamic_properties ON classified_ads USING GIN (dynamic_properties);
+CREATE INDEX idx_classified_ads_room_count ON classified_ads(room_count);
+CREATE INDEX idx_classified_ads_heating_type ON classified_ads(heating_type);
 CREATE INDEX idx_financial_records_vendor_id ON financial_records(vendor_id);
 CREATE INDEX idx_financial_records_record_date ON financial_records(record_date);
 
@@ -134,6 +169,22 @@ CREATE TRIGGER classified_ads_updated_at
   BEFORE UPDATE ON classified_ads
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+CREATE OR REPLACE FUNCTION public.generate_custom_listing_id()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.custom_listing_id IS NULL OR NEW.custom_listing_id = '' THEN
+    NEW.custom_listing_id := '360-' || UPPER(SUBSTRING(REPLACE(NEW.id::text, '-', '') FROM 1 FOR 8));
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER set_custom_listing_id
+  BEFORE INSERT ON classified_ads
+  FOR EACH ROW EXECUTE FUNCTION public.generate_custom_listing_id();
+
 -- ─────────────────────────────────────────────
 -- 6. ROW LEVEL SECURITY
 -- ─────────────────────────────────────────────
@@ -146,6 +197,16 @@ ALTER TABLE financial_records ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Profiles are viewable by owner"
   ON profiles FOR SELECT
   USING (auth.uid() = id OR public.is_admin());
+
+CREATE POLICY "Public can view vendor profiles for approved ads"
+  ON profiles FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM classified_ads
+      WHERE classified_ads.vendor_id = profiles.id
+        AND classified_ads.status = 'approved'
+    )
+  );
 
 CREATE POLICY "Users can insert own profile"
   ON profiles FOR INSERT
@@ -162,9 +223,13 @@ CREATE POLICY "Admins can update any profile role"
   USING (public.is_admin());
 
 -- Classified ads policies
-CREATE POLICY "Anyone can view approved ads"
+CREATE POLICY "Anyone can view approved active public ads"
   ON classified_ads FOR SELECT
-  USING (status = 'approved');
+  USING (
+    status = 'approved'
+    AND is_archived = false
+    AND visibility_mode = 'public'
+  );
 
 CREATE POLICY "Vendors can view own ads"
   ON classified_ads FOR SELECT
@@ -179,18 +244,18 @@ CREATE POLICY "Vendors can insert own ads"
   TO authenticated
   WITH CHECK (auth.uid() = vendor_id);
 
-CREATE POLICY "Vendors can update own pending ads"
+CREATE POLICY "Vendors can update own ads"
   ON classified_ads FOR UPDATE
-  USING (auth.uid() = vendor_id AND status = 'pending')
+  USING (auth.uid() = vendor_id)
   WITH CHECK (auth.uid() = vendor_id);
 
 CREATE POLICY "Admins can update any ad status"
   ON classified_ads FOR UPDATE
   USING (public.is_admin());
 
-CREATE POLICY "Vendors can delete own pending ads"
+CREATE POLICY "Vendors can delete own ads"
   ON classified_ads FOR DELETE
-  USING (auth.uid() = vendor_id AND status = 'pending');
+  USING (auth.uid() = vendor_id);
 
 -- Financial records policies
 CREATE POLICY "Vendors can view own financial records"

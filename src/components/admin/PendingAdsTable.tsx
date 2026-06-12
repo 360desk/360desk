@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { getCustomListingId } from "@/lib/listing";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/Badge";
 import { AdGallery } from "@/components/ads/AdGallery";
+import { CategoryBadge } from "@/components/ads/CategoryBadge";
 import type { ClassifiedAd } from "@/types/database";
 
 export function PendingAdsTable() {
@@ -62,40 +65,62 @@ export function PendingAdsTable() {
 
   return (
     <div className="flex flex-col gap-4">
-      {ads.map((ad) => (
-        <Card
-          key={ad.id}
-          className="flex flex-col gap-4 sm:flex-row sm:items-start"
-        >
-          <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28">
-            <AdGallery ad={ad} variant="thumb" className="h-full w-full" />
-          </div>
+      {ads.map((ad) => {
+        const listingId = getCustomListingId(ad);
 
-          <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">
-                  {ad.category}
+        return (
+          <Card
+            key={ad.id}
+            className="flex flex-col gap-4 sm:flex-row sm:items-stretch border-cream/10 bg-charcoal-light"
+          >
+            <Link
+              href={`/ilan/${ad.id}`}
+              className="group flex flex-1 min-w-0 gap-4 transition-colors"
+            >
+              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-cream/10 sm:h-28 sm:w-28 group-hover:border-primary/40 transition-colors">
+                <AdGallery ad={ad} variant="thumb" className="h-full w-full" />
+              </div>
+
+              <div className="flex flex-1 min-w-0 flex-col gap-1.5 py-0.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CategoryBadge ad={ad} />
+                  <StatusBadge status={ad.status} />
+                </div>
+
+                <span className="inline-flex w-fit items-center rounded border border-cream/15 bg-charcoal px-2 py-0.5 text-xs font-mono tracking-wider text-cream/70">
+                  {listingId}
                 </span>
-                <StatusBadge status={ad.status} />
+
+                <h3 className="text-lg font-semibold text-cream group-hover:text-primary transition-colors line-clamp-1">
+                  {ad.title}
+                </h3>
+
+                {ad.description && (
+                  <p className="text-sm text-cream/60 line-clamp-2 group-hover:text-cream/80 transition-colors">
+                    {ad.description}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-4 mt-auto pt-1 text-sm text-cream/40">
+                  <span className="font-medium text-primary/80">
+                    {formatCurrency(ad.price)}
+                  </span>
+                  {ad.location && <span>{ad.location}</span>}
+                  <span>{formatDate(ad.created_at)}</span>
+                </div>
+
+                <span className="text-xs text-cream/30 group-hover:text-primary/70 transition-colors">
+                  Detayları incele →
+                </span>
               </div>
-              <h3 className="text-lg font-semibold text-cream">{ad.title}</h3>
-              {ad.description && (
-                <p className="text-sm text-cream/60 mt-1 line-clamp-2">
-                  {ad.description}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-4 mt-2 text-sm text-cream/40">
-                <span>{formatCurrency(ad.price)}</span>
-                {ad.location && <span>{ad.location}</span>}
-                <span>{formatDate(ad.created_at)}</span>
-              </div>
-            </div>
-            <div className="flex gap-2 shrink-0">
+            </Link>
+
+            <div className="flex gap-2 shrink-0 sm:flex-col sm:justify-center border-t border-cream/10 sm:border-t-0 sm:border-l sm:pl-4 pt-4 sm:pt-0">
               <Button
                 size="sm"
                 onClick={() => handleAction(ad.id, "approved")}
                 disabled={actionLoading === ad.id}
+                className="flex-1 sm:flex-none"
               >
                 Onayla
               </Button>
@@ -104,13 +129,14 @@ export function PendingAdsTable() {
                 size="sm"
                 onClick={() => handleAction(ad.id, "rejected")}
                 disabled={actionLoading === ad.id}
+                className="flex-1 sm:flex-none"
               >
                 Reddet
               </Button>
             </div>
-          </div>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 }

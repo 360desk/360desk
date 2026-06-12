@@ -12,6 +12,7 @@ interface AdListProps {
   statusFilter?: "all" | "pending" | "approved" | "rejected";
   showStatus?: boolean;
   emptyMessage?: string;
+  linkToDetail?: boolean;
   enableDetail?: boolean;
 }
 
@@ -20,6 +21,7 @@ export function AdList({
   statusFilter = "all",
   showStatus = false,
   emptyMessage = "Henüz ilan bulunmuyor.",
+  linkToDetail = false,
   enableDetail = false,
 }: AdListProps) {
   const supabase = createClient();
@@ -37,7 +39,10 @@ export function AdList({
     if (vendorId) {
       query = query.eq("vendor_id", vendorId);
     } else {
-      query = query.eq("status", "approved");
+      query = query
+        .eq("status", "approved")
+        .eq("is_archived", false)
+        .eq("visibility_mode", "public");
     }
 
     if (statusFilter !== "all") {
@@ -88,7 +93,12 @@ export function AdList({
             <AdCard
               ad={ad}
               showStatus={showStatus}
-              onClick={enableDetail ? () => setSelectedAd(ad) : undefined}
+              linkToDetail={linkToDetail}
+              onClick={
+                enableDetail && !linkToDetail
+                  ? () => setSelectedAd(ad)
+                  : undefined
+              }
             />
             {showStatus && ad.status === "pending" && vendorId && (
               <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -96,6 +106,7 @@ export function AdList({
                   variant="danger"
                   size="sm"
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     handleDelete(ad.id);
                   }}
@@ -108,7 +119,7 @@ export function AdList({
         ))}
       </div>
 
-      {enableDetail && (
+      {enableDetail && !linkToDetail && (
         <AdDetailModal ad={selectedAd} onClose={() => setSelectedAd(null)} />
       )}
     </>

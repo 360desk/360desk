@@ -13,9 +13,15 @@ interface ImageUploadProps {
   files: File[];
   onChange: (files: File[]) => void;
   disabled?: boolean;
+  maxImages?: number;
 }
 
-export function ImageUpload({ files, onChange, disabled }: ImageUploadProps) {
+export function ImageUpload({
+  files,
+  onChange,
+  disabled,
+  maxImages = MAX_AD_IMAGES,
+}: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
@@ -24,10 +30,10 @@ export function ImageUpload({ files, onChange, disabled }: ImageUploadProps) {
     (incoming: FileList | File[]) => {
       setError("");
       const list = Array.from(incoming);
-      const remaining = MAX_AD_IMAGES - files.length;
+      const remaining = maxImages - files.length;
 
       if (remaining <= 0) {
-        setError(`En fazla ${MAX_AD_IMAGES} görsel ekleyebilirsiniz.`);
+        setError(`En fazla ${maxImages} görsel ekleyebilirsiniz.`);
         return;
       }
 
@@ -43,7 +49,7 @@ export function ImageUpload({ files, onChange, disabled }: ImageUploadProps) {
 
       onChange([...files, ...toAdd]);
     },
-    [files, onChange]
+    [files, maxImages, onChange]
   );
 
   const removeFile = (index: number) => {
@@ -104,7 +110,7 @@ export function ImageUpload({ files, onChange, disabled }: ImageUploadProps) {
             <span className="text-primary">dosya seçin</span>
           </p>
           <p className="mt-1 text-xs text-cream/40">
-            JPEG, PNG, WebP, GIF — max 5 MB — en fazla {MAX_AD_IMAGES} görsel
+            JPEG, PNG, WebP, GIF — max 5 MB — en fazla {maxImages} görsel
           </p>
         </div>
         <input
@@ -160,7 +166,7 @@ export function ImageUpload({ files, onChange, disabled }: ImageUploadProps) {
       )}
 
       <p className="text-xs text-cream/30">
-        {files.length}/{MAX_AD_IMAGES} görsel seçildi
+        {files.length}/{maxImages} görsel seçildi
       </p>
     </div>
   );

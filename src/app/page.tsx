@@ -8,14 +8,14 @@ export default function HomePage() {
 
       <section id="ilanlar">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-cream">Yayında Olan İlanlar</h2>
+          <h2 className="text-2xl font-bold text-cream">Yayında Olan Emlak İlanları</h2>
           <p className="text-sm text-cream/50 mt-1">
-            Onaylanmış ilanları keşfedin
+            Bursa bölgesindeki onaylanmış emlak ilanlarını keşfedin
           </p>
         </div>
         <AdList
           emptyMessage="Henüz yayında ilan bulunmuyor."
-          enableDetail
+          linkToDetail
         />
       </section>
     </div>

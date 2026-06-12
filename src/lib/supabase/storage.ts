@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const AD_IMAGES_BUCKET = "ad-images";
+export const LISTINGS_BUCKET = "listings";
 export const MAX_AD_IMAGES = 8;
 export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const ACCEPTED_IMAGE_TYPES = [
@@ -8,6 +9,12 @@ export const ACCEPTED_IMAGE_TYPES = [
   "image/png",
   "image/webp",
   "image/gif",
+] as const;
+
+export const ACCEPTED_LISTING_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
 ] as const;
 
 export function validateImageFile(file: File): string | null {

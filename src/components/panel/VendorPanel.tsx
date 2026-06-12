@@ -1,24 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdForm } from "@/components/ads/AdForm";
-import { AdList } from "@/components/ads/AdList";
+import { ProfileCompletionGuard } from "@/components/profile/ProfileCompletionGuard";
+import { OfficeInviteBanner } from "@/components/panel/OfficeInviteBanner";
+import { SubscriptionUsageWidget } from "@/components/panel/SubscriptionUsageWidget";
+import { MarketAnalyticsPanel } from "@/components/panel/MarketAnalyticsPanel";
+import { TeamManagementPanel } from "@/components/panel/TeamManagementPanel";
+import { VendorAdDashboard } from "@/components/panel/VendorAdDashboard";
+import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
+import { profileHasTeamAccess } from "@/lib/supabase/team-quota";
 import { FinanceForm } from "@/components/finance/FinanceForm";
 import { FinanceList } from "@/components/finance/FinanceList";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
-type Tab = "ilanlar" | "finans";
+type Tab = "ilanlar" | "finans" | "pazar" | "ekibim";
+
+function resolveInitialTab(
+  searchParams: ReturnType<typeof useSearchParams>,
+  canManageTeam: boolean
+): Tab {
+  const requestedTab = searchParams.get("tab");
+
+  if (requestedTab === "ekibim" && canManageTeam) {
+    return "ekibim";
+  }
+
+  if (requestedTab === "pazar" && canManageTeam) {
+    return "pazar";
+  }
+
+  if (requestedTab === "finans") {
+    return "finans";
+  }
+
+  return "ilanlar";
+}
 
 export function VendorPanel() {
-  const { user } = useAuth();
+  const { user, profile, loading } = useAuth();
+  const searchParams = useSearchParams();
+  const canManageTeam = profileHasTeamAccess(profile);
   const [activeTab, setActiveTab] = useState<Tab>("ilanlar");
   const [refreshKey, setRefreshKey] = useState(0);
+  const {
+    limits,
+    loading: limitsLoading,
+    refresh: refreshLimits,
+  } = useSubscriptionLimits();
 
-  if (!user) return null;
+  useEffect(() => {
+    setActiveTab(resolveInitialTab(searchParams, canManageTeam));
+  }, [searchParams, canManageTeam]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="h-10 w-48 rounded-lg bg-charcoal-light animate-pulse" />
+        <Card className="py-16 text-center">
+          <p className="text-cream/40">Panel yükleniyor...</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Card className="py-12 text-center">
+        <p className="text-cream/60 mb-4">
+          Oturum bulunamadı. Panele erişmek için giriş yapın.
+        </p>
+        <Link href="/giris?next=/panelim">
+          <Button>Giriş Yap</Button>
+        </Link>
+      </Card>
+    );
+  }
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "ilanlar", label: "İlanlarım" },
     { id: "finans", label: "Finans" },
+    ...(canManageTeam
+      ? [
+          { id: "pazar" as const, label: "Pazar Analitiği" },
+          { id: "ekibim" as const, label: "Ofis Yönetimi" },
+        ]
+      : []),
   ];
 
   return (
@@ -47,25 +118,41 @@ export function VendorPanel() {
         ))}
       </div>
 
+      <OfficeInviteBanner />
+
       {activeTab === "ilanlar" && (
         <div className="flex flex-col gap-6">
-          <AdForm
-            vendorId={user.id}
-            onSuccess={() => setRefreshKey((k) => k + 1)}
+          <SubscriptionUsageWidget
+            limits={limits}
+            loading={limitsLoading}
           />
+
+          <ProfileCompletionGuard>
+            <AdForm
+              vendorId={user.id}
+              onSuccess={() => {
+                setRefreshKey((k) => k + 1);
+                void refreshLimits();
+              }}
+            />
+          </ProfileCompletionGuard>
+
           <div>
             <h2 className="text-lg font-semibold text-cream mb-4">
-              İlan Listesi
+              İlanlarım
             </h2>
-            <AdList
+            <VendorAdDashboard
               key={refreshKey}
-              vendorId={user.id}
-              showStatus
-              emptyMessage="Henüz ilan eklemediniz."
+              limits={limits}
+              onLimitsChange={refreshLimits}
             />
           </div>
         </div>
       )}
+
+      {activeTab === "pazar" && canManageTeam && <MarketAnalyticsPanel />}
+
+      {activeTab === "ekibim" && <TeamManagementPanel />}
 
       {activeTab === "finans" && (
         <div className="flex flex-col gap-6">

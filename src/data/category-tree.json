@@ -1,0 +1,39 @@
+{
+  "GAYRİMENKUL": {
+    "SATILIK": {
+      "KONUT": ["DAİRE", "REZİDANS", "MÜSTAKİL", "VİLLA", "KOOPERATİF HİSSESİ"],
+      "OFİS": ["STANDART", "SAĞLIK"],
+      "TİCARİ ALAN": ["STANDART", "BACALI", "SAĞLIK"],
+      "ENDÜSTRİYEL ALAN": ["İMALATHANE", "ÜRETİM", "TARIM", "HAYVANCILIK"],
+      "BİNA": [],
+      "DEVRE MÜLK": ["SABİT", "DEĞİŞİMLİ"],
+      "ARSA": ["İMARLI", "İMARSIZ"]
+    },
+    "KİRALIK": {
+      "KONUT": ["DAİRE", "REZİDANS", "MÜSTAKİL", "VİLLA", "KOOPERATİF HİSSESİ"],
+      "OFİS": ["STANDART", "SAĞLIK"],
+      "TİCARİ ALAN": ["STANDART", "BACALI", "SAĞLIK"],
+      "ENDÜSTRİYEL ALAN": ["İMALATHANE", "ÜRETİM", "TARIM", "HAYVANCILIK"],
+      "BİNA": [],
+      "DEVRE MÜLK": ["SABİT", "DEĞİŞİMLİ"],
+      "ARSA": ["İMARLI", "İMARSIZ"]
+    },
+    "DEVREN SATILIK": {
+      "KONUT": [],
+      "OFİS": [],
+      "TİCARİ ALAN": [],
+      "ENDÜSTRİYEL ALAN": []
+    },
+    "DEVREN KİRALIK": {
+      "KONUT": [],
+      "OFİS": [],
+      "TİCARİ ALAN": [],
+      "ENDÜSTRİYEL ALAN": []
+    },
+    "KAT KARŞILIĞI": {
+      "KONUT İMARLI": [],
+      "TİCARİ İMARLI": [],
+      "KARMA İMARLI": []
+    }
+  }
+}

@@ -2,6 +2,7 @@ import type { AdStatus } from "@/types/database";
 import { AD_STATUS_LABELS } from "@/lib/format";
 
 const statusStyles: Record<AdStatus, string> = {
+  draft: "bg-cream/10 text-cream/60 border-cream/20",
   pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   approved: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   rejected: "bg-red-500/15 text-red-300 border-red-500/30",

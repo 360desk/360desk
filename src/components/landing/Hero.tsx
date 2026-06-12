@@ -7,25 +7,32 @@ export function Hero() {
       <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-primary/5 blur-2xl" />
 
-      <div className="relative max-w-2xl">
-        <h1 className="text-4xl sm:text-5xl font-bold text-cream leading-tight">
-          İlanlarınızı yönetin,{" "}
-          <span className="text-primary">finansınızı</span> takip edin.
+      <div className="relative max-w-4xl">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-cream leading-tight">
+          Türkiye&apos;nin{" "}
+          <span className="text-primary">Emlak Profesyonellerinin</span> Merkezine
+          Hoşgeldiniz
         </h1>
-        <p className="mt-4 text-lg text-cream/60 leading-relaxed">
-          360desk ile ilanlarınızı kolayca oluşturun, gelir ve giderlerinizi
-          tek panelden yönetin. Sahibinden tarzı ilan sistemi ve Parasut
-          tarzı finans takibi bir arada.
+        <p className="mt-5 max-w-3xl text-base sm:text-lg text-cream/60 leading-relaxed">
+          Emlak profesyoneli olarak işinizi takip etmek, mülklerinizi yönetmek,
+          yatırımcılarınızla iletişimde kalmak, gelirlerinizi görmek ve diğer
+          profesyonel ve yatırımcılarla etkileşimde olmak için hemen ücretsiz
+          deneme üyeliğini başlatın ve işinizde yeni bir aşamaya geçin
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/giris">
-            <Button size="lg">Hemen Başla</Button>
+          <Link href="/fiyatlandirma">
+            <Button size="lg">Hemen Üye Ol</Button>
           </Link>
-          <a href="#ilanlar">
+          <Link href="/profesyoneller">
             <Button variant="secondary" size="lg">
-              İlanları İncele
+              Profesyonelleri Gör
             </Button>
-          </a>
+          </Link>
+          <Link href="/ilanlar">
+            <Button variant="outline" size="lg">
+              Açık İlanlara Göz At
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

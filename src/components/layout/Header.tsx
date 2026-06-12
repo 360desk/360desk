@@ -1,12 +1,53 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { resolveIsAdmin, resolveUserRole } from "@/lib/auth-role";
+import { isProfileComplete } from "@/lib/profile";
+import { profileHasTeamAccess } from "@/lib/supabase/team-quota";
+import { ProfessionalIdentityBadge } from "@/components/layout/ProfessionalIdentityBadge";
+import { SubscriptionStatusBadge } from "@/components/layout/SubscriptionStatusBadge";
 import { Button } from "@/components/ui/Button";
 import { RoleBadge } from "@/components/ui/Badge";
 
+const navLinkClass =
+  "text-sm font-medium text-cream/80 hover:text-cream transition-colors duration-200";
+
 export function Header() {
-  const { user, profile, role, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (signingOut) {
+      return;
+    }
+
+    setSigningOut(true);
+
+    try {
+      await signOut();
+    } catch {
+      setSigningOut(false);
+    }
+  };
+
+  const isUserAdmin = useMemo(
+    () => resolveIsAdmin(profile, user),
+    [profile, user]
+  );
+
+  const displayRole = useMemo(
+    () => resolveUserRole(profile, user),
+    [profile, user]
+  );
+
+  const showProfileLink =
+    Boolean(user) && !isUserAdmin && displayRole === "vendor";
+
+  const showOfficeManagement = Boolean(user) && profileHasTeamAccess(profile);
+  const showSubscriptionBadge =
+    Boolean(user) && !isUserAdmin && displayRole === "vendor";
 
   return (
     <header className="sticky top-0 z-50 border-b border-cream/10 bg-charcoal/95 backdrop-blur-md">
@@ -20,45 +61,87 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="hidden sm:inline text-sm text-cream/70 hover:text-cream transition-colors"
-          >
+        <nav className="flex items-center gap-3 sm:gap-4">
+          <Link href="/ilanlar" className={`hidden sm:inline ${navLinkClass}`}>
             İlanlar
           </Link>
 
-          {!loading && (
+          {user ? (
             <>
-              {user ? (
-                <>
-                  <RoleBadge role={role} />
-                  {(role === "vendor" || role === "admin") && (
-                    <Link href="/panel">
-                      <Button variant="secondary" size="sm">
-                        Panelim
-                      </Button>
-                    </Link>
-                  )}
-                  {role === "admin" && (
-                    <Link href="/admin">
-                      <Button variant="secondary" size="sm">
-                        Yönetim
-                      </Button>
-                    </Link>
-                  )}
-                  <span className="hidden md:inline text-sm text-cream/50">
-                    {profile?.full_name || profile?.email}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={() => signOut()}>
-                    Çıkış
-                  </Button>
-                </>
+              {showSubscriptionBadge && (
+                <SubscriptionStatusBadge
+                  profile={profile}
+                  loading={loading || !profile}
+                />
+              )}
+
+              {isUserAdmin ? (
+                <RoleBadge role={displayRole} />
               ) : (
-                <Link href="/giris">
-                  <Button size="sm">Giriş Yap</Button>
+                profile && <ProfessionalIdentityBadge profile={profile} />
+              )}
+
+              <Link href="/panelim">
+                <Button variant="secondary" size="sm">
+                  Panelim
+                </Button>
+              </Link>
+
+              {showOfficeManagement && (
+                <Link href="/panel/ekibim">
+                  <Button variant="secondary" size="sm">
+                    Ofis Yönetimi
+                  </Button>
                 </Link>
               )}
+
+              {isUserAdmin && (
+                <Link href="/admin">
+                  <Button variant="secondary" size="sm">
+                    Yönetim
+                  </Button>
+                </Link>
+              )}
+
+              {showProfileLink && (
+                <Link href="/profil">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className={
+                      profile && !isProfileComplete(profile)
+                        ? "border-primary/40"
+                        : ""
+                    }
+                  >
+                    {profile && !isProfileComplete(profile)
+                      ? "Profili Tamamla"
+                      : "Hesabım"}
+                  </Button>
+                </Link>
+              )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={signingOut}
+                onClick={() => void handleSignOut()}
+              >
+                {signingOut ? "Çıkış..." : "Çıkış"}
+              </Button>
+            </>
+          ) : loading ? (
+            <span className="text-sm text-cream/30">...</span>
+          ) : (
+            <>
+              <Link href="/fiyatlandirma">
+                <Button variant="outline" size="sm">
+                  Üye Ol
+                </Button>
+              </Link>
+              <Link href="/giris">
+                <Button size="sm">Giriş Yap</Button>
+              </Link>
             </>
           )}
         </nav>

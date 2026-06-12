@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AdGallery } from "@/components/ads/AdGallery";
+import { CategoryBadge } from "@/components/ads/CategoryBadge";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { ClassifiedAd } from "@/types/database";
 
@@ -54,9 +55,9 @@ export function AdDetailModal({ ad, onClose }: AdDetailModalProps) {
         <div className="p-6 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary mb-2">
-                {ad.category}
-              </span>
+              <div className="mb-2">
+                <CategoryBadge ad={ad} />
+              </div>
               <h2 className="text-2xl font-bold text-cream">{ad.title}</h2>
             </div>
             <p className="text-2xl font-bold text-primary shrink-0">
